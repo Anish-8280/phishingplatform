@@ -1,0 +1,53 @@
+# This file tells Kubernetes how to run the backend service.
+# Apply it to a cluster using 'kubectl apply -f backend-deployment.yaml'
+
+apiVersion: apps/v1
+kind: Deployment # The resource type is a Deployment
+metadata:
+  name: backend-deployment # The unique name for this Deployment object
+  labels:
+    app: backend # A label to identify this service
+spec:
+  replicas: 3 # Run 3 copies (Pods) for high availability and load balancing
+  selector:
+    matchLabels:
+      app: backend # This Deployment manages any Pod with the 'app: backend' label
+  template:
+    # This is the template for creating each individual Pod (copy)
+    metadata:
+      labels:
+        app: backend # Assigns the label to the Pods
+    spec:
+      containers:
+        - name: backend-api-container
+          # In production, you use a pre-built image from a container registry
+          # (like Docker Hub, GCR, or ECR)
+          image: your-registry/backend-image:1.0.5
+          ports:
+            - containerPort: 8080 # The port the application listens on *inside* the container
+          
+          # Environment variables for production
+          # Secrets (passwords, API keys) should be mounted from Kubernetes Secrets,
+          # not written here in plain text.
+          env:
+            - name: DB_HOST
+              value: "postgres-service.production.svc.cluster.local"
+            - name: DB_USER
+              value: "prod_user"
+            - name: DB_NAME
+              value: "prod_db"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret # The name of the K8s Secret object
+                  key: password # The key within that Secret to use
+          
+          # Resource limits to ensure the container doesn't use too many
+          # server resources.
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m" # 0.25 of a CPU core
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

@@ -1,0 +1,57 @@
+# This file defines a local development environment.
+# Run 'docker-compose up' in this directory to start all services.
+
+version: '3.8'
+
+services:
+  # The database (e.g., PostgreSQL)
+  db:
+    image: postgres:14-alpine
+    container_name: local-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Exposes the database to your host machine (e.g., for a DB GUI)
+
+  # The Backend API (builds from the 'backend' folder)
+  backend:
+    build:
+      context: ../backend # Path to the backend's Dockerfile
+    container_name: local-backend-api
+    ports:
+      - "8080:8080" # Exposes the API port
+    environment:
+      - DB_HOST=db # Connects to the 'db' service defined above
+      - DB_USER=user
+      - DB_PASS=password
+      - DB_NAME=app_db
+    depends_on:
+      - db # Tells Docker to start the 'db' service first
+
+  # The Frontend App (builds from the 'client' folder)
+  client:
+    build:
+      context: ../client # Path to the client's Dockerfile
+    container_name: local-frontend
+    ports:
+      - "3000:3000" # Exposes the React dev server port
+    environment:
+      - REACT_APP_API_URL=http://localhost:8080 # Tells React how to find the backend
+    depends_on:
+      - backend # Waits for the backend to be running
+
+  # The ML Model Server (builds from the 'ml-service' folder)
+  ml-service:
+    build:
+      context: ../ml-service
+    container_name: local-ml-server
+    ports:
+      - "5001:5001" # Exposes the Python server port
+
+# Defines a named volume to persist database data across container restarts
+volumes:
+  postgres_data:

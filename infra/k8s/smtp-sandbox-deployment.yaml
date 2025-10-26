@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-sandbox-deployment
+  labels:
+    app: mail-sandbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mail-sandbox
+  template:
+    metadata:
+      labels:
+        app: mail-sandbox
+    spec:
+      containers:
+        # Using the standard, safe MailHog image for testing
+        - name: mailhog
+          image: mailhog/mailhog:latest
+          ports:
+            - name: smtp
+              containerPort: 1025
+            - name: http
+              containerPort: 8025
